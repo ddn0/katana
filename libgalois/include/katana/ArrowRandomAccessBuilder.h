@@ -37,13 +37,13 @@ public:
     ArrowBuilder builder;
     if (data_.size() > 0) {
       if (auto r = builder.AppendValues(data_); !r.ok()) {
-        KATANA_LOG_DEBUG("arrow error: {}", r);
+        KATANA_LOG_ERROR("arrow error: {}", r);
         return katana::ErrorCode::ArrowError;
       }
     }
     std::shared_ptr<arrow::Array> array;
     if (auto r = builder.Finish(&array); !r.ok()) {
-      KATANA_LOG_DEBUG("arrow error: {}", r);
+      KATANA_LOG_ERROR("arrow error: {}", r);
       return katana::ErrorCode::ArrowError;
     }
     return array;
@@ -92,7 +92,7 @@ public:
         if (auto r =
                 builder.AppendValues(data_.data(), data_.size(), valid_.data());
             !r.ok()) {
-          KATANA_LOG_DEBUG("arrow error: {}", r);
+          KATANA_LOG_ERROR("arrow error: {}", r);
           return katana::ErrorCode::ArrowError;
         }
       } else {
@@ -101,13 +101,13 @@ public:
         // AppendValues(vector<string>, uint8_t*)
         // AppendValues(char**, int64_t, uint8_t*)
         if (auto r = builder.AppendValues(data_, valid_.data()); !r.ok()) {
-          KATANA_LOG_DEBUG("arrow error: {}", r);
+          KATANA_LOG_ERROR("arrow error: {}", r);
           return katana::ErrorCode::ArrowError;
         }
       }
     }
     if (auto r = builder.Finish(array); !r.ok()) {
-      KATANA_LOG_DEBUG("arrow error: {}", r);
+      KATANA_LOG_ERROR("arrow error: {}", r);
       return katana::ErrorCode::ArrowError;
     }
     return katana::ResultSuccess();

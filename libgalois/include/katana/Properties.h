@@ -224,12 +224,12 @@ public:
         sizeof(typename arrow::NumericArray<U>::value_type) == sizeof(T),
         "incompatible types");
     if (array.offset() < 0) {
-      KATANA_LOG_DEBUG("arrow error: Offset not supported");
+      KATANA_LOG_ERROR("arrow error: Offset not supported");
       return ErrorCode::ArrowError;
     }
     if (array.data()->buffers.size() <= 1 ||
         !array.data()->buffers[1]->is_mutable()) {
-      KATANA_LOG_DEBUG("arrow error: immutable buffers not supported");
+      KATANA_LOG_ERROR("arrow error: immutable buffers not supported");
       return ErrorCode::ArrowError;
     }
     return PODPropertyView(
@@ -241,18 +241,18 @@ public:
   static Result<PODPropertyView> Make(
       const arrow::FixedSizeBinaryArray& array) {
     if (array.byte_width() != sizeof(T)) {
-      KATANA_LOG_DEBUG(
+      KATANA_LOG_ERROR(
           "arrow error: bad byte width of data: {} != {}", array.byte_width(),
           sizeof(T));
       return ErrorCode::ArrowError;
     }
     if (array.offset() < 0) {
-      KATANA_LOG_DEBUG("arrow error: Offset not supported");
+      KATANA_LOG_ERROR("arrow error: Offset not supported");
       return ErrorCode::ArrowError;
     }
     if (array.data()->buffers.size() <= 1 ||
         !array.data()->buffers[1]->is_mutable()) {
-      KATANA_LOG_DEBUG("arrow error: immutable buffers not supported");
+      KATANA_LOG_ERROR("arrow error: immutable buffers not supported");
       return ErrorCode::ArrowError;
     }
     return PODPropertyView(
@@ -399,7 +399,7 @@ AllocateTable(uint64_t num_rows, const std::vector<std::string>& names) {
   if (auto r = arrow::stl::TableFromTupleRange(
           arrow::default_memory_pool(), std::move(rows), names, &table);
       !r.ok()) {
-    KATANA_LOG_DEBUG("arrow error: {}", r);
+    KATANA_LOG_ERROR("arrow error: {}", r);
     return katana::ErrorCode::ArrowError;
   }
   return table;

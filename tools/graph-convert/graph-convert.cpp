@@ -2837,13 +2837,13 @@ AppendEdgeData(
   Builder builder;
   if (auto r = builder.AppendValues(edge_data.begin(), edge_data.end());
       !r.ok()) {
-    KATANA_LOG_DEBUG("arrow error: {}", r);
+    KATANA_LOG_ERROR("arrow error: {}", r);
     return katana::ErrorCode::ArrowError;
   }
 
   std::shared_ptr<arrow::Array> ret;
   if (auto r = builder.Finish(&ret); !r.ok()) {
-    KATANA_LOG_DEBUG("arrow error: {}", r);
+    KATANA_LOG_ERROR("arrow error: {}", r);
     return katana::ErrorCode::ArrowError;
   }
   std::vector<std::shared_ptr<arrow::Field>> fields;
@@ -2852,7 +2852,7 @@ AppendEdgeData(
   columns.emplace_back(ret);
   auto edge_data_table = arrow::Table::Make(arrow::schema(fields), columns);
   if (auto r = pfg->AddEdgeProperties(edge_data_table); !r) {
-    KATANA_LOG_DEBUG("could not add edge property: {}", r.error());
+    KATANA_LOG_ERROR("could not add edge property: {}", r.error());
     return r;
   }
   return katana::ResultSuccess();

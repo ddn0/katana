@@ -77,7 +77,7 @@ DoStoreArrowArrayAtName(
       StandardArrowProperties());
 
   if (!write_result.ok()) {
-    KATANA_LOG_DEBUG("arrow error: {}", write_result);
+    KATANA_LOG_ERROR("arrow error: {}", write_result);
     return tsuba::ErrorCode::ArrowError;
   }
 
@@ -94,7 +94,7 @@ StoreArrowArrayAtName(
   try {
     return DoStoreArrowArrayAtName(array, dir, name, desc);
   } catch (const std::exception& exp) {
-    KATANA_LOG_DEBUG("arrow exception: {}", exp.what());
+    KATANA_LOG_ERROR("arrow exception: {}", exp.what());
     return tsuba::ErrorCode::ArrowError;
   }
 }

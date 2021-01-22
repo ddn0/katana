@@ -20,14 +20,14 @@ DoLoadTable(const std::string& expected_name, const katana::Uri& file_path) {
   auto open_file_result =
       parquet::arrow::OpenFile(fv, arrow::default_memory_pool(), &reader);
   if (!open_file_result.ok()) {
-    KATANA_LOG_DEBUG("arrow error: {}", open_file_result);
+    KATANA_LOG_ERROR("arrow error: {}", open_file_result);
     return tsuba::ErrorCode::ArrowError;
   }
 
   std::shared_ptr<arrow::Table> out;
   auto read_result = reader->ReadTable(&out);
   if (!read_result.ok()) {
-    KATANA_LOG_DEBUG("arrow error: {}", read_result);
+    KATANA_LOG_ERROR("arrow error: {}", read_result);
     return tsuba::ErrorCode::ArrowError;
   }
 
@@ -38,7 +38,7 @@ DoLoadTable(const std::string& expected_name, const katana::Uri& file_path) {
   // types is 2^31.
   auto combine_result = out->CombineChunks(arrow::default_memory_pool());
   if (!combine_result.ok()) {
-    KATANA_LOG_DEBUG("arrow error: {}", combine_result.status());
+    KATANA_LOG_ERROR("arrow error: {}", combine_result.status());
     return tsuba::ErrorCode::ArrowError;
   }
 
@@ -46,12 +46,12 @@ DoLoadTable(const std::string& expected_name, const katana::Uri& file_path) {
 
   std::shared_ptr<arrow::Schema> schema = out->schema();
   if (schema->num_fields() != 1) {
-    KATANA_LOG_DEBUG("expected 1 field found {} instead", schema->num_fields());
+    KATANA_LOG_ERROR("expected 1 field found {} instead", schema->num_fields());
     return tsuba::ErrorCode::InvalidArgument;
   }
 
   if (schema->field(0)->name() != expected_name) {
-    KATANA_LOG_DEBUG(
+    KATANA_LOG_ERROR(
         "expected {} found {} instead", expected_name,
         schema->field(0)->name());
     return tsuba::ErrorCode::InvalidArgument;
@@ -77,7 +77,7 @@ DoLoadTableSlice(
   auto open_file_result =
       parquet::arrow::OpenFile(fv, arrow::default_memory_pool(), &reader);
   if (!open_file_result.ok()) {
-    KATANA_LOG_DEBUG("arrow error: {}", open_file_result);
+    KATANA_LOG_ERROR("arrow error: {}", open_file_result);
     return tsuba::ErrorCode::ArrowError;
   }
 
@@ -109,13 +109,13 @@ DoLoadTableSlice(
   std::shared_ptr<arrow::Table> out;
   auto read_result = reader->ReadRowGroups(row_groups, &out);
   if (!read_result.ok()) {
-    KATANA_LOG_DEBUG("arrow error: {}", read_result);
+    KATANA_LOG_ERROR("arrow error: {}", read_result);
     return tsuba::ErrorCode::ArrowError;
   }
 
   auto combine_result = out->CombineChunks(arrow::default_memory_pool());
   if (!combine_result.ok()) {
-    KATANA_LOG_DEBUG("arrow error: {}", combine_result.status());
+    KATANA_LOG_ERROR("arrow error: {}", combine_result.status());
     return tsuba::ErrorCode::ArrowError;
   }
 
@@ -145,7 +145,7 @@ tsuba::LoadTable(
   try {
     return DoLoadTable(expected_name, file_path);
   } catch (const std::exception& exp) {
-    KATANA_LOG_DEBUG("arrow exception: {}", exp.what());
+    KATANA_LOG_ERROR("arrow exception: {}", exp.what());
     return tsuba::ErrorCode::ArrowError;
   }
 }
@@ -157,7 +157,7 @@ tsuba::LoadTableSlice(
   try {
     return DoLoadTableSlice(expected_name, file_path, offset, length);
   } catch (const std::exception& exp) {
-    KATANA_LOG_DEBUG("arrow exception: {}", exp.what());
+    KATANA_LOG_ERROR("arrow exception: {}", exp.what());
     return ErrorCode::ArrowError;
   }
 }

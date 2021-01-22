@@ -77,7 +77,7 @@ UnmarshalVector(const std::shared_ptr<arrow::ChunkedArray>& source) {
   if (auto r =
           arrow::stl::TupleRangeFromTable(*table, cast_options, &ctx, &dest);
       !r.ok()) {
-    KATANA_LOG_DEBUG("UnmarshalVector arrow error: {}", r.ToString());
+    KATANA_LOG_ERROR("UnmarshalVector arrow error: {}", r.ToString());
     return katana::ErrorCode::ArrowError;
   }
   return std::vector<T>(std::move(*SingleView(&dest)));
@@ -96,7 +96,7 @@ MarshalVector(const std::vector<T>& source) {
   if (auto r = arrow::stl::TableFromTupleRange(
           pool, *source_view, {"column1"}, &table);
       !r.ok()) {
-    KATANA_LOG_DEBUG("MarshalVector arrow error: {}", r.ToString());
+    KATANA_LOG_ERROR("MarshalVector arrow error: {}", r.ToString());
     return katana::ErrorCode::ArrowError;
   }
   return table->column(0);
@@ -115,7 +115,7 @@ VectorToArrowTable(const std::string& name, const std::vector<T>& source) {
   if (auto r =
           arrow::stl::TableFromTupleRange(pool, *source_view, {name}, &table);
       !r.ok()) {
-    KATANA_LOG_DEBUG("VectorToArrowTable arrow error: {}", r.ToString());
+    KATANA_LOG_ERROR("VectorToArrowTable arrow error: {}", r.ToString());
     return katana::ErrorCode::ArrowError;
   }
   // Jump through hoops to make the type nullable even though we are not using
@@ -123,7 +123,7 @@ VectorToArrowTable(const std::string& name, const std::vector<T>& source) {
   auto nullable_field = table->schema()->field(0)->WithNullable(true);
   auto nullable_table = table->SetColumn(0, nullable_field, table->column(0));
   if (!nullable_table.ok()) {
-    KATANA_LOG_DEBUG(
+    KATANA_LOG_ERROR(
         "VectorToArrowTable set column error: {}", nullable_table.status());
     return katana::ErrorCode::ArrowError;
   }
