@@ -26,10 +26,10 @@ AddTables(
 
     auto load_result = LoadTable(properties.name, p_path);
     if (!load_result) {
-      return load_result.error();
+      return load_result.error().WithContext("error loading {}", p_path);
     }
 
-    std::shared_ptr<arrow::Table> table = load_result.value();
+    std::shared_ptr<arrow::Table> table = std::move(load_result.value());
 
     auto add_result = add_fn(table);
     if (!add_result) {

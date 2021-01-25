@@ -1,6 +1,7 @@
 #ifndef KATANA_LIBSUPPORT_KATANA_LOGGING_H_
 #define KATANA_LIBSUPPORT_KATANA_LOGGING_H_
 
+#include <cstring>
 #include <mutex>
 #include <sstream>
 #include <string>
@@ -70,9 +71,17 @@ void
 LogLine(
     LogLevel level, const char* file_name, int line_no, F fmt_string,
     Args&&... args) {
-  std::string s = fmt::format(fmt_string, std::forward<Args>(args)...);
-  std::string with_line = fmt::format("{}:{}: {}", file_name, line_no, s);
-  internal::LogString(level, with_line);
+  fmt::memory_buffer out;
+  const char* base_name = std::strrchr(file_name, '/');
+  if (!base_name) {
+    base_name = file_name;
+  } else {
+    base_name++;
+  }
+  fmt::format_to(out, "{}:{} ", base_name, line_no);
+  fmt::format_to(out, fmt_string, std::forward<Args>(args)...);
+
+  internal::LogString(level, fmt::to_string(out));
 }
 
 KATANA_EXPORT void AbortApplication [[noreturn]] ();

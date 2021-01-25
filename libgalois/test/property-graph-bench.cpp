@@ -5,8 +5,6 @@
 #include "katana/PropertyFileGraph.h"
 #include "katana/PropertyGraph.h"
 
-namespace gg = katana;
-
 using DataType = int64_t;
 
 #define FIELD(Number)                                                          \
@@ -69,10 +67,10 @@ struct PropertyTuple<10> {
 
 template <size_t num_properties>
 void
-IterateProperty(benchmark::State& state, gg::PropertyFileGraph* g) {
+IterateProperty(benchmark::State& state, katana::PropertyFileGraph* g) {
   using P = typename PropertyTuple<num_properties>::type;
 
-  auto r = gg::PropertyGraph<P, P>::Make(g);
+  auto r = katana::PropertyGraph<P, P>::Make(g);
   if (!r) {
     KATANA_LOG_FATAL("could not make property graph: {}", r.error());
   }
@@ -94,7 +92,7 @@ IterateProperty(benchmark::State& state) {
 
   RandomPolicy policy{4};
 
-  std::unique_ptr<gg::PropertyFileGraph> g =
+  std::unique_ptr<katana::PropertyFileGraph> g =
       MakeFileGraph<DataType>(num_nodes, num_properties, &policy);
 
   switch (num_properties) {
@@ -118,7 +116,7 @@ IterateBaseline(benchmark::State& state) {
 
   RandomPolicy policy{4};
 
-  std::unique_ptr<gg::PropertyFileGraph> g =
+  std::unique_ptr<katana::PropertyFileGraph> g =
       MakeFileGraph<DataType>(num_nodes, num_properties, &policy);
 
   for (auto _ : state) {

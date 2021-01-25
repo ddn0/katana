@@ -77,8 +77,8 @@ DoStoreArrowArrayAtName(
       StandardArrowProperties());
 
   if (!write_result.ok()) {
-    KATANA_LOG_DEBUG("arrow error: {}", write_result);
-    return tsuba::ErrorCode::ArrowError;
+    return KATANA_RESULT_ERROR(
+        tsuba::ErrorCode::ArrowError, "arrow error: {}", write_result);
   }
 
   ff->Bind(next_path.string());
@@ -94,8 +94,8 @@ StoreArrowArrayAtName(
   try {
     return DoStoreArrowArrayAtName(array, dir, name, desc);
   } catch (const std::exception& exp) {
-    KATANA_LOG_DEBUG("arrow exception: {}", exp.what());
-    return tsuba::ErrorCode::ArrowError;
+    return KATANA_RESULT_ERROR(
+        tsuba::ErrorCode::ArrowError, "arrow exception: {}", exp.what());
   }
 }
 
@@ -157,8 +157,7 @@ CommitRDG(
   // wait for all the work we queued to finish
   TSUBA_PTP(tsuba::internal::FaultSensitivity::High);
   if (auto res = desc->Finish(); !res) {
-    KATANA_LOG_ERROR("at least one async write failed: {}", res.error());
-    return res.error();
+    return res.error().WithContext("at least one async write failed");
   }
   TSUBA_PTP(tsuba::internal::FaultSensitivity::High);
   comm->Barrier();
@@ -184,12 +183,10 @@ CommitRDG(
             .string(),
         reinterpret_cast<const uint8_t*>(curr_s.data()), curr_s.size());
     if (!res) {
-      KATANA_LOG_ERROR(
-          "CommitRDG future failed {}: {}",
+      return res.error().WithContext(
+          "CommitRDG future failed {}",
           tsuba::RDGMeta::FileName(
-              handle.impl_->rdg_meta().dir(), new_meta.version()),
-          res.error());
-      return res.error();
+              handle.impl_->rdg_meta().dir(), new_meta.version()));
     }
     return katana::ResultSuccess();
   });
@@ -305,8 +302,8 @@ tsuba::RDG::DoStore(
       *core_->node_table(), core_->part_header().node_prop_info_list(),
       handle.impl_->rdg_meta().dir(), write_group.get());
   if (!node_write_result) {
-    KATANA_LOG_DEBUG("failed to write node properties");
-    return node_write_result.error();
+    return node_write_result.error().WithContext(
+        "failed to write node properties");
   }
 
   // update node properties with newly written locations
@@ -317,8 +314,8 @@ tsuba::RDG::DoStore(
       *core_->edge_table(), core_->part_header().edge_prop_info_list(),
       handle.impl_->rdg_meta().dir(), write_group.get());
   if (!edge_write_result) {
-    KATANA_LOG_DEBUG("failed to write edge properties");
-    return edge_write_result.error();
+    return edge_write_result.error().WithContext(
+        "failed to write edge properties");
   }
 
   // update edge properties with newly written locations
@@ -329,16 +326,14 @@ tsuba::RDG::DoStore(
       WritePartArrays(handle.impl_->rdg_meta().dir(), write_group.get());
 
   if (!part_write_result) {
-    KATANA_LOG_DEBUG("failed: WritePartMetadata for part_prop_info_list");
-    return part_write_result.error();
+    return part_write_result.error().WithContext("failed to write part arrays");
   }
   core_->part_header().set_part_properties(
       std::move(part_write_result.value()));
 
   if (auto write_result = core_->part_header().Write(handle, write_group.get());
       !write_result) {
-    KATANA_LOG_DEBUG("error: metadata write");
-    return write_result.error();
+    return write_result.error().WithContext("failed to write metadata");
   }
 
   // Update lineage and commit
@@ -401,7 +396,8 @@ tsuba::RDG::Make(
     const RDGMeta& meta, const std::vector<std::string>* node_props,
     const std::vector<std::string>* edge_props) {
   if (!meta.IsEmptyRDG() && meta.num_hosts() != Comm()->Num) {
-    KATANA_LOG_ERROR(
+    return KATANA_RESULT_ERROR(
+        ErrorCode::InvalidArgument,
         "number of hosts for partitioned graph does not current number of "
         "hosts: {} vs {}",
         meta.num_hosts(), Comm()->Num);
@@ -413,17 +409,14 @@ tsuba::RDG::Make(
       return PartitionFileName(meta.dir(), 0, version());
     }
     */
-    return ErrorCode::InvalidArgument;
   }
 
   katana::Uri partition_path = meta.PartitionFileName(Comm()->ID);
 
   auto part_header_res = RDGPartHeader::Make(partition_path);
   if (!part_header_res) {
-    KATANA_LOG_DEBUG(
-        "failed: ReadMetaData (path: {}): {}", partition_path,
-        part_header_res.error());
-    return part_header_res.error();
+    return part_header_res.error().WithContext(
+        "failed to read path {}", partition_path);
   }
 
   RDG rdg(std::make_unique<RDGCore>(std::move(part_header_res.value())));
@@ -458,8 +451,8 @@ tsuba::RDG::Make(
     RDGHandle handle, const std::vector<std::string>* node_props,
     const std::vector<std::string>* edge_props) {
   if (!handle.impl_->AllowsRead()) {
-    KATANA_LOG_DEBUG("failed: handle does not allow full read");
-    return ErrorCode::InvalidArgument;
+    return KATANA_RESULT_ERROR(
+        ErrorCode::InvalidArgument, "handle does not allow full read");
   }
   return RDG::Make(handle.impl_->rdg_meta(), node_props, edge_props);
 }
@@ -469,8 +462,8 @@ tsuba::RDG::Store(
     RDGHandle handle, const std::string& command_line,
     std::unique_ptr<FileFrame> ff) {
   if (!handle.impl_->AllowsWrite()) {
-    KATANA_LOG_DEBUG("failed: handle does not allow write");
-    return ErrorCode::InvalidArgument;
+    return KATANA_RESULT_ERROR(
+        ErrorCode::InvalidArgument, "handle does not allow write");
   }
   // We trust the partitioner to give us a valid graph, but we
   // report our assumptions
@@ -607,9 +600,9 @@ katana::Result<void>
 tsuba::RDG::SetTopologyFile(const katana::Uri& new_top) {
   katana::Uri dir = new_top.DirName();
   if (dir != rdg_dir_) {
-    KATANA_LOG_ERROR(
+    return KATANA_RESULT_ERROR(
+        ErrorCode::InvalidArgument,
         "new topology file must be in this RDG's directory ({})", rdg_dir_);
-    return ErrorCode::InvalidArgument;
   }
   return core_->RegisterTopologyFile(new_top.BaseName());
 }

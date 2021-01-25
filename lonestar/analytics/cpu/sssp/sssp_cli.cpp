@@ -105,7 +105,7 @@ static void
 OutputResults(katana::PropertyFileGraph* pfg) {
   auto r = pfg->NodePropertyTyped<Weight>("distance");
   if (!r) {
-    KATANA_LOG_FATAL("Error getting results: {}", r.error().message());
+    KATANA_LOG_FATAL("Error getting results: {}", r.error());
   }
   auto results = r.value();
   KATANA_LOG_DEBUG_ASSERT(
@@ -192,8 +192,7 @@ main(int argc, char** argv) {
 
   auto stats_result = SsspStatistics::Compute(pfg.get(), "distance");
   if (!stats_result) {
-    KATANA_LOG_FATAL(
-        "Computing statistics: {}", stats_result.error().message());
+    KATANA_LOG_FATAL("Computing statistics: {}", stats_result.error());
   }
   auto stats = stats_result.value();
   stats.Print();
@@ -210,8 +209,7 @@ main(int argc, char** argv) {
         r) {
       std::cout << "Verification successful.\n";
     } else {
-      KATANA_LOG_FATAL(
-          "verification failed: ", r.has_error() ? r.error().message() : "");
+      KATANA_LOG_FATAL("verification failed: {}", r.error());
     }
   }
 

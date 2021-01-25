@@ -17,6 +17,7 @@ set(sources
         src/JSON.cpp
         src/Logging.cpp
         src/Random.cpp
+        src/Result.cpp
         src/Strings.cpp
         src/Uri.cpp
 )
